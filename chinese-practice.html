@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chinese Practice — NYC Tech</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.09);
+    --border-mid: rgba(0,0,0,0.16);
+    --text: #1a1a18;
+    --text-muted: #6b6b66;
+    --text-faint: #a8a8a2;
+    --purple-bg: #EEEDFE;
+    --purple-text: #3C3489;
+    --purple-border: #AFA9EC;
+    --purple-mid: #7F77DD;
+    --teal-bg: #E1F5EE;
+    --teal-text: #085041;
+    --teal-border: #5DCAA5;
+    --coral-bg: #FAECE7;
+    --coral-text: #712B13;
+    --coral-border: #F0997B;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --blue-border: #85B7EB;
+    --amber-bg: #FAEEDA;
+    --amber-text: #633806;
+    --amber-border: #EF9F27;
+    --green-bg: #E1F5EE;
+    --green-text: #085041;
+    --green-border: #5DCAA5;
+    --red-bg: #FCEBEB;
+    --red-text: #791F1F;
+    --red-border: #F09595;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-pill: 99px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Header */
+  .site-header {
+    padding: 1.5rem 1.5rem 0;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  .site-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .site-desc {
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+
+  /* Layout */
+  .layout {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 1.25rem 1.5rem 3rem;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  /* Sidebar nav */
+  .sidebar {
+    position: sticky;
+    top: 1.25rem;
+  }
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    padding-left: 2px;
+  }
+  .topic-list { display: flex; flex-direction: column; gap: 2px; }
+  .topic-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s, color 0.1s;
+  }
+  .topic-btn:hover { background: var(--border); color: var(--text); }
+  .topic-btn.active { background: var(--purple-bg); color: var(--purple-text); font-weight: 500; }
+  .topic-num {
+    font-size: 10px;
+    color: var(--text-faint);
+    min-width: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .topic-btn.active .topic-num { color: var(--purple-mid); }
+
+  /* Main panel */
+  .main { min-width: 0; }
+  .topic-header { margin-bottom: 1.25rem; }
+  .topic-zh { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .topic-en { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    width: fit-content;
+    margin-bottom: 1.25rem;
+  }
+  .mode-tab {
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 400;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: none;
+    border-right: 0.5px solid var(--border-mid);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .mode-tab:last-child { border-right: none; }
+  .mode-tab.active { background: var(--bg); color: var(--text); font-weight: 500; }
+  .mode-tab:hover:not(.active) { background: var(--bg); }
+
+  /* Sections */
+  .section { display: none; }
+  .section.visible { display: block; }
+
+  /* Flashcards */
+  .hint { font-size: 12px; color: var(--text-faint); margin-bottom: 1rem; }
+  .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .vocab-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 12px;
+    cursor: pointer;
+    text-align: center;
+    min-height: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: border-color 0.12s;
+    user-select: none;
+  }
+  .vocab-card:hover { border-color: var(--border-mid); }
+  .vocab-card .zh-big { font-size: 20px; color: var(--text); }
+  .vocab-card .pinyin { font-size: 11px; color: var(--purple-mid); }
+  .vocab-card .en-sm { font-size: 12px; color: var(--text-muted); display: none; }
+  .vocab-card.flipped .pinyin { display: none; }
+  .vocab-card.flipped .en-sm { display: block; }
+
+  /* Quiz */
+  .progress-bar { height: 3px; background: var(--border); border-radius: 99px; margin-bottom: 1.25rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--purple-mid); border-radius: 99px; transition: width 0.3s; }
+  .quiz-box {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .quiz-prompt { font-size: 28px; font-weight: 500; color: var(--text); text-align: center; margin-bottom: 6px; }
+  .quiz-pinyin { font-size: 14px; color: var(--purple-mid); text-align: center; margin-bottom: 1.5rem; }
+  .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quiz-opt {
+    padding: 11px 14px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+    font-family: inherit;
+  }
+  .quiz-opt:hover { background: var(--bg); }
+  .quiz-opt.correct { background: var(--teal-bg); border-color: var(--teal-border); color: var(--teal-text); }
+  .quiz-opt.wrong { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+  .quiz-feedback { font-size: 13px; color: var(--text-muted); text-align: center; min-height: 20px; margin-top: 12px; }
+  .quiz-nav { display: flex; align-items: center; justify-content: space-between; }
+  .quiz-score { font-size: 13px; color: var(--text-muted); }
+
+  /* Build sentences */
+  .build-prompt { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+  .build-en { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
+  .build-display {
+    min-height: 54px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    background: var(--surface);
+  }
+  .built-word {
+    background: var(--purple-bg);
+    color: var(--purple-text);
+    border: 0.5px solid var(--purple-border);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 15px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .word-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .word-chip {
+    background: var(--surface);
+    color: var(--text);
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 7px 13px;
+    font-size: 15px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+  }
+  .word-chip:hover { background: var(--bg); }
+  .word-chip.used { opacity: 0.28; pointer-events: none; }
+  .build-result { font-size: 13px; min-height: 20px; margin-top: 4px; }
+  .build-result.ok { color: var(--teal-text); }
+  .build-result.bad { color: var(--red-text); }
+  .build-counter { font-size: 12px; color: var(--text-faint); margin-top: 10px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn-primary {
+    background: var(--purple-bg);
+    color: var(--purple-text);
+    border-color: var(--purple-border);
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #e0defd; }
+  .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  /* Done state */
+  .done-state { text-align: center; padding: 2rem 1rem; }
+  .done-state .big { font-size: 32px; margin-bottom: 8px; }
+  .done-state p { color: var(--text-muted); font-size: 14px; margin-bottom: 1.25rem; }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    .layout { grid-template-columns: 1fr; padding: 1rem; }
+    .sidebar { position: static; }
+    .topic-list { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .topic-btn { width: auto; font-size: 12px; padding: 5px 10px; }
+    .topic-num { display: none; }
+    .quiz-options { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">Chinese Practice</div>
+  <div class="site-desc">10 topics · flashcards, quiz, sentence building</div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-label">Topics</div>
+    <div class="topic-list" id="topicList"></div>
+  </nav>
+
+  <main class="main">
+    <div class="topic-header">
+      <div class="topic-zh" id="topicZh"></div>
+      <div class="topic-en" id="topicEn"></div>
+    </div>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="setMode('vocab')">Flashcards</button>
+      <button class="mode-tab" onclick="setMode('quiz')">Quiz</button>
+      <button class="mode-tab" onclick="setMode('build')">Build sentences</button>
+    </div>
+
+    <div class="section visible" id="sec-vocab"></div>
+    <div class="section" id="sec-quiz"></div>
+    <div class="section" id="sec-build"></div>
+  </main>
+</div>
+
+<script>
+const topics = [
+  {
+    zh:"自我介绍", en:"Introducing yourself",
+    vocab:[
+      {zh:"我叫",py:"wǒ jiào",en:"my name is"},
+      {zh:"我是",py:"wǒ shì",en:"I am"},
+      {zh:"工程师",py:"gōngchéngshī",en:"engineer"},
+      {zh:"美国",py:"měiguó",en:"America"},
+      {zh:"长大",py:"zhǎngdà",en:"grew up"},
+      {zh:"很高兴",py:"hěn gāoxìng",en:"very pleased"},
+      {zh:"认识你",py:"rènshi nǐ",en:"to know you"},
+      {zh:"在Meta工作",py:"zài Meta gōngzuò",en:"work at Meta"}
+    ],
+    sentences:[
+      {en:"My name is ___.",zh:"我叫___。",words:["我叫","我是","你好","工程师"]},
+      {en:"I grew up in America.",zh:"我在美国长大。",words:["我在","美国","长大","工作","中国"]},
+      {en:"Nice to meet you.",zh:"很高兴认识你。",words:["很高兴","认识你","见面","长大","你好"]}
+    ]
+  },
+  {
+    zh:"家和成长", en:"Home & growing up",
+    vocab:[
+      {zh:"父母",py:"fùmǔ",en:"parents"},
+      {zh:"南京人",py:"nánjīngrén",en:"person from Nanjing"},
+      {zh:"从小",py:"cóngxiǎo",en:"since childhood"},
+      {zh:"普通话",py:"pǔtōnghuà",en:"Mandarin"},
+      {zh:"家里",py:"jiālǐ",en:"at home"},
+      {zh:"说话",py:"shuōhuà",en:"to speak"},
+      {zh:"兄弟姐妹",py:"xiōngdì jiěmèi",en:"siblings"},
+      {zh:"纽约",py:"niǔyuē",en:"New York"}
+    ],
+    sentences:[
+      {en:"My parents are from Nanjing.",zh:"我父母是南京人。",words:["我父母","是","南京人","纽约人","从小"]},
+      {en:"I grew up in New York since childhood.",zh:"我从小在纽约长大。",words:["我从小","在","纽约","长大","美国","工作"]},
+      {en:"We speak Mandarin at home.",zh:"我们家里说普通话。",words:["我们","家里","说","普通话","南京话","工作"]}
+    ]
+  },
+  {
+    zh:"点餐和吃饭", en:"Ordering food",
+    vocab:[
+      {zh:"我要",py:"wǒ yào",en:"I want / I'll have"},
+      {zh:"一碗",py:"yī wǎn",en:"one bowl"},
+      {zh:"太辣了",py:"tài là le",en:"too spicy"},
+      {zh:"好吃",py:"hǎochī",en:"delicious"},
+      {zh:"你吃过吗",py:"nǐ chīguò ma",en:"have you tried this?"},
+      {zh:"推荐",py:"tuījiàn",en:"recommend"},
+      {zh:"买单",py:"mǎidān",en:"pay the bill"},
+      {zh:"不辣",py:"bù là",en:"not spicy"}
+    ],
+    sentences:[
+      {en:"I'll have one bowl of noodles.",zh:"我要一碗面。",words:["我要","一碗","面","饭","太辣了","推荐"]},
+      {en:"This is delicious!",zh:"这个好吃！",words:["这个","好吃","太辣了","不辣","推荐"]},
+      {en:"Can you recommend something?",zh:"你能推荐一下吗？",words:["你能","推荐","一下吗","买单","好吃","我要"]}
+    ]
+  },
+  {
+    zh:"日常问候", en:"Greetings & small talk",
+    vocab:[
+      {zh:"最近怎么样",py:"zuìjìn zěnmeyàng",en:"how are things lately?"},
+      {zh:"你吃了吗",py:"nǐ chī le ma",en:"have you eaten? (greeting)"},
+      {zh:"还好",py:"hái hǎo",en:"pretty good / so-so"},
+      {zh:"忙死了",py:"máng sǐ le",en:"super busy"},
+      {zh:"周末",py:"zhōumò",en:"weekend"},
+      {zh:"过得好吗",py:"guò de hǎo ma",en:"having a good time?"},
+      {zh:"没什么",py:"méi shénme",en:"nothing much"},
+      {zh:"累了",py:"lèi le",en:"tired"}
+    ],
+    sentences:[
+      {en:"How are things lately?",zh:"最近怎么样？",words:["最近","怎么样","你好","忙死了","周末"]},
+      {en:"I've been super busy.",zh:"我最近忙死了。",words:["我最近","忙死了","还好","累了","没什么"]},
+      {en:"How was your weekend?",zh:"周末过得好吗？",words:["周末","过得好吗","最近","怎么样","你吃了吗"]}
+    ]
+  },
+  {
+    zh:"纽约城市生活", en:"Life in New York",
+    vocab:[
+      {zh:"地铁",py:"dìtiě",en:"subway"},
+      {zh:"晚点了",py:"wǎndiǎn le",en:"running late / delayed"},
+      {zh:"你住哪",py:"nǐ zhù nǎ",en:"where do you live?"},
+      {zh:"法拉盛",py:"fǎlāshèng",en:"Flushing, Queens"},
+      {zh:"好玩",py:"hǎowán",en:"fun / worth visiting"},
+      {zh:"堵车",py:"dǔchē",en:"traffic jam"},
+      {zh:"附近",py:"fùjìn",en:"nearby"},
+      {zh:"馆子",py:"guǎnzi",en:"restaurant (informal)"}
+    ],
+    sentences:[
+      {en:"The subway is delayed again.",zh:"地铁又晚点了。",words:["地铁","又","晚点了","堵车","附近","好玩"]},
+      {en:"Where do you live?",zh:"你住哪儿？",words:["你住","哪儿","法拉盛","地铁","附近"]},
+      {en:"There are good restaurants nearby.",zh:"附近有好吃的馆子。",words:["附近","有","好吃的","馆子","法拉盛","堵车"]}
+    ]
+  },
+  {
+    zh:"爱好和空闲", en:"Hobbies & free time",
+    vocab:[
+      {zh:"我喜欢",py:"wǒ xǐhuan",en:"I like"},
+      {zh:"打游戏",py:"dǎ yóuxì",en:"play video games"},
+      {zh:"听音乐",py:"tīng yīnyuè",en:"listen to music"},
+      {zh:"平时",py:"píngshí",en:"usually"},
+      {zh:"干嘛",py:"gàn má",en:"do what / up to"},
+      {zh:"运动",py:"yùndòng",en:"exercise / sports"},
+      {zh:"看书",py:"kàn shū",en:"read books"},
+      {zh:"有时候",py:"yǒu shíhou",en:"sometimes"}
+    ],
+    sentences:[
+      {en:"I like playing video games.",zh:"我喜欢打游戏。",words:["我喜欢","打游戏","听音乐","运动","看书"]},
+      {en:"What do you usually do?",zh:"你平时喜欢干嘛？",words:["你平时","喜欢","干嘛","有时候","运动","我喜欢"]},
+      {en:"Sometimes I read books.",zh:"我有时候看书。",words:["我","有时候","看书","打游戏","平时","干嘛"]}
+    ]
+  },
+  {
+    zh:"解释你的工作", en:"Explaining your job",
+    vocab:[
+      {zh:"软件工程师",py:"ruǎnjiàn gōngchéngshī",en:"software engineer"},
+      {zh:"我们组",py:"wǒmen zǔ",en:"our team"},
+      {zh:"负责",py:"fùzé",en:"responsible for"},
+      {zh:"开发",py:"kāifā",en:"develop / build"},
+      {zh:"产品",py:"chǎnpǐn",en:"product"},
+      {zh:"简单说",py:"jiǎndān shuō",en:"simply put"},
+      {zh:"用户",py:"yònghù",en:"users"},
+      {zh:"功能",py:"gōngnéng",en:"feature"}
+    ],
+    sentences:[
+      {en:"I'm a software engineer.",zh:"我是软件工程师。",words:["我是","软件工程师","开发","产品","用户"]},
+      {en:"Our team is responsible for the product.",zh:"我们组负责这个产品。",words:["我们组","负责","这个","产品","功能","用户"]},
+      {en:"Simply put, I build features for users.",zh:"简单说，我给用户开发功能。",words:["简单说","我给","用户","开发","功能","产品"]}
+    ]
+  },
+  {
+    zh:"听不懂怎么说", en:"When you didn't understand",
+    vocab:[
+      {zh:"再说一遍",py:"zài shuō yī biàn",en:"say it again"},
+      {zh:"说慢一点",py:"shuō màn yīdiǎn",en:"speak a bit slower"},
+      {zh:"没太听懂",py:"méi tài tīng dǒng",en:"didn't quite catch that"},
+      {zh:"什么意思",py:"shénme yìsi",en:"what does that mean?"},
+      {zh:"能不能",py:"néng bu néng",en:"can you / could you"},
+      {zh:"怎么说",py:"zěnme shuō",en:"how do you say"},
+      {zh:"不太确定",py:"bú tài quèdìng",en:"not quite sure"},
+      {zh:"帮我解释",py:"bāng wǒ jiěshì",en:"explain it to me"}
+    ],
+    sentences:[
+      {en:"Can you say that again?",zh:"你能再说一遍吗？",words:["你能","再说一遍","吗","说慢一点","没太听懂"]},
+      {en:"Please speak a bit slower.",zh:"请说慢一点。",words:["请","说慢一点","再说一遍","什么意思","能不能"]},
+      {en:"What does that mean?",zh:"这是什么意思？",words:["这是","什么意思","没太听懂","帮我解释","再说一遍"]}
+    ]
+  },
+  {
+    zh:"家人和节假日", en:"Family & holidays",
+    vocab:[
+      {zh:"过年",py:"guò nián",en:"celebrate Chinese New Year"},
+      {zh:"我妈做的菜",py:"wǒ mā zuò de cài",en:"the food my mom makes"},
+      {zh:"一起",py:"yīqǐ",en:"together"},
+      {zh:"回家",py:"huí jiā",en:"go home"},
+      {zh:"中秋节",py:"zhōngqiūjié",en:"Mid-Autumn Festival"},
+      {zh:"放假",py:"fàngjià",en:"have a day off"},
+      {zh:"传统",py:"chuántǒng",en:"tradition"},
+      {zh:"团圆",py:"tuányuán",en:"family reunion"}
+    ],
+    sentences:[
+      {en:"We celebrate New Year together.",zh:"我们一起过年。",words:["我们","一起","过年","回家","放假","中秋节"]},
+      {en:"My mom's cooking is the best.",zh:"我妈做的菜最好吃。",words:["我妈做的菜","最","好吃","过年","一起","传统"]},
+      {en:"We go home for Mid-Autumn Festival.",zh:"中秋节我们回家团圆。",words:["中秋节","我们","回家","团圆","放假","过年"]}
+    ]
+  },
+  {
+    zh:"说你在学中文", en:"Talking about learning Chinese",
+    vocab:[
+      {zh:"我在练",py:"wǒ zài liàn",en:"I'm practicing"},
+      {zh:"说得不好",py:"shuō de bù hǎo",en:"don't speak it well"},
+      {zh:"帮我改错",py:"bāng wǒ gǎi cuò",en:"help me correct mistakes"},
+      {zh:"南京话",py:"nánjīnghuà",en:"Nanjing dialect"},
+      {zh:"口音",py:"kǒuyīn",en:"accent"},
+      {zh:"听得懂",py:"tīng de dǒng",en:"can understand"},
+      {zh:"慢慢来",py:"màn màn lái",en:"take it slow"},
+      {zh:"加油",py:"jiāyóu",en:"keep it up!"}
+    ],
+    sentences:[
+      {en:"My Chinese isn't great, I'm practicing.",zh:"我中文说得不好，在练。",words:["我中文","说得不好","在练","口音","帮我改错"]},
+      {en:"My family speaks Nanjing dialect.",zh:"我家说南京话。",words:["我家","说","南京话","普通话","口音","在练"]},
+      {en:"Can you help me correct my mistakes?",zh:"你能帮我改错吗？",words:["你能","帮我改错","吗","慢慢来","加油","说得不好"]}
+    ]
+  }
+];
+
+let curTopic = 0;
+let curMode = "vocab";
+let quizOrder = [], quizIdx = 0, quizScore = 0, quizAnswered = false;
+let buildIdx = 0, builtWords = [], usedIdxs = [];
+
+function init() {
+  const list = document.getElementById("topicList");
+  topics.forEach((t, i) => {
+    const btn = document.createElement("button");
+    btn.className = "topic-btn" + (i===0?" active":"");
+    btn.innerHTML = `<span class="topic-num">${String(i+1).padStart(2,"0")}</span>${t.zh}`;
+    btn.onclick = () => selectTopic(i);
+    list.appendChild(btn);
+  });
+  renderTopic();
+}
+
+function selectTopic(i) {
+  curTopic = i;
+  document.querySelectorAll(".topic-btn").forEach((b,j) => b.classList.toggle("active", j===i));
+  setMode("vocab");
+  document.querySelectorAll(".mode-tab").forEach((t,j) => t.classList.toggle("active", j===0));
+}
+
+function setMode(m) {
+  curMode = m;
+  document.querySelectorAll(".mode-tab").forEach((t,i) => {
+    t.classList.toggle("active", ["vocab","quiz","build"][i] === m);
+  });
+  document.getElementById("sec-vocab").classList.toggle("visible", m==="vocab");
+  document.getElementById("sec-quiz").classList.toggle("visible", m==="quiz");
+  document.getElementById("sec-build").classList.toggle("visible", m==="build");
+  if (m==="vocab") renderVocab();
+  if (m==="quiz") initQuiz();
+  if (m==="build") initBuild();
+}
+
+function renderTopic() {
+  const t = topics[curTopic];
+  document.getElementById("topicZh").textContent = t.zh;
+  document.getElementById("topicEn").textContent = t.en;
+  renderVocab();
+}
+
+function renderVocab() {
+  const t = topics[curTopic];
+  document.getElementById("sec-vocab").innerHTML =
+    `<p class="hint">Tap a card to reveal the meaning. Tap again to flip back.</p>
+     <div class="vocab-grid">${t.vocab.map(v=>`
+      <div class="vocab-card" onclick="this.classList.toggle('flipped')">
+        <div class="zh-big">${v.zh}</div>
+        <div class="pinyin">${v.py}</div>
+        <div class="en-sm">${v.en}</div>
+      </div>`).join("")}</div>`;
+}
+
+function initQuiz() {
+  const t = topics[curTopic];
+  quizOrder = [...t.vocab].sort(()=>Math.random()-0.5);
+  quizIdx = 0; quizScore = 0; quizAnswered = false;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const t = topics[curTopic];
+  const sec = document.getElementById("sec-quiz");
+  if (quizIdx >= quizOrder.length) {
+    sec.innerHTML = `
+      <div class="done-state">
+        <div class="big">完成！</div>
+        <p>Score: ${quizScore} / ${quizOrder.length}</p>
+        <button class="btn btn-primary" onclick="initQuiz()">Try again</button>
+      </div>`;
+    return;
+  }
+  const item = quizOrder[quizIdx];
+  const pct = Math.round((quizIdx/quizOrder.length)*100);
+  let opts = [item.en];
+  const pool = t.vocab.filter(v=>v.en!==item.en).sort(()=>Math.random()-0.5).slice(0,3);
+  pool.forEach(p=>opts.push(p.en));
+  opts = opts.sort(()=>Math.random()-0.5);
+
+  sec.innerHTML = `
+    <div class="progress-bar"><div class="progress-fill" id="pFill" style="width:${pct}%"></div></div>
+    <div class="quiz-box">
+      <div class="quiz-prompt">${item.zh}</div>
+      <div class="quiz-pinyin">${item.py}</div>
+      <div class="quiz-options" id="qOpts">
+        ${opts.map(o=>`<button class="quiz-opt" onclick="answerQuiz(this,'${o.replace(/'/g,"\\'")}','${item.en.replace(/'/g,"\\'")}')">${o}</button>`).join("")}
+      </div>
+      <div class="quiz-feedback" id="qFeedback"></div>
+    </div>
+    <div class="quiz-nav">
+      <span class="quiz-score">Score: ${quizScore} / ${quizOrder.length}</span>
+      <button class="btn" onclick="nextQuestion()">Next →</button>
+    </div>`;
+}
+
+function answerQuiz(btn, chosen, correct) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const isCorrect = chosen === correct;
+  btn.classList.add(isCorrect ? "correct" : "wrong");
+  if (!isCorrect) {
+    document.querySelectorAll(".quiz-opt").forEach(b => { if (b.textContent === correct) b.classList.add("correct"); });
+  }
+  if (isCorrect) quizScore++;
+  document.getElementById("qFeedback").textContent = isCorrect ? "正确！" : "答案是：" + correct;
+  document.querySelector(".quiz-score").textContent = "Score: " + quizScore + " / " + quizOrder.length;
+}
+
+function nextQuestion() { quizIdx++; quizAnswered = false; renderQuestion(); }
+
+function initBuild() { buildIdx = 0; renderBuild(); }
+
+function renderBuild() {
+  const t = topics[curTopic];
+  const sec = document.getElementById("sec-build");
+  if (buildIdx >= t.sentences.length) {
+    sec.innerHTML = `
+      <div class="done-state">
+        <div class="big">全部完成！</div>
+        <p>All sentences done. Great work.</p>
+        <button class="btn btn-primary" onclick="initBuild()">Start over</button>
+      </div>`;
+    return;
+  }
+  const s = t.sentences[buildIdx];
+  builtWords = []; usedIdxs = [];
+  const allWords = [...s.words].sort(()=>Math.random()-0.5);
+  sec.innerHTML = `
+    <p class="build-prompt">Arrange the words to build the sentence:</p>
+    <p class="build-en">"${s.en}"</p>
+    <div class="build-display" id="bDisplay"><span style="color:#a8a8a2;font-size:14px;">tap words below to add…</span></div>
+    <div class="word-chips" id="bChips">
+      ${allWords.map((w,i)=>`<span class="word-chip" data-idx="${i}" onclick="addWord('${w.replace(/'/g,"\\'")}',${i},this)">${w}</span>`).join("")}
+    </div>
+    <div class="build-result" id="bResult"></div>
+    <div class="action-row">
+      <button class="btn" onclick="clearBuild()">Clear</button>
+      <button class="btn" onclick="checkBuild()">Check ✓</button>
+      <button class="btn" onclick="revealBuild()">Show answer</button>
+    </div>
+    <div class="build-counter">${buildIdx+1} of ${t.sentences.length}</div>`;
+}
+
+function addWord(w, idx, chip) {
+  if (usedIdxs.includes(idx)) return;
+  usedIdxs.push(idx);
+  chip.classList.add("used");
+  builtWords.push({w, idx});
+  refreshDisplay();
+}
+
+function refreshDisplay() {
+  const d = document.getElementById("bDisplay");
+  if (!builtWords.length) { d.innerHTML = `<span style="color:#a8a8a2;font-size:14px;">tap words below to add…</span>`; return; }
+  d.innerHTML = builtWords.map((item, pos) =>
+    `<span class="built-word" onclick="removeWord(${pos},${item.idx})">${item.w}</span>`).join("");
+}
+
+function removeWord(pos, idx) {
+  builtWords.splice(pos, 1);
+  usedIdxs = usedIdxs.filter(i=>i!==idx);
+  document.querySelectorAll(".word-chip").forEach(c => { if (parseInt(c.dataset.idx)===idx) c.classList.remove("used"); });
+  refreshDisplay();
+  const r = document.getElementById("bResult");
+  if (r) { r.textContent=""; r.className="build-result"; }
+}
+
+function clearBuild() {
+  builtWords=[]; usedIdxs=[];
+  document.querySelectorAll(".word-chip").forEach(c=>c.classList.remove("used"));
+  refreshDisplay();
+  const r = document.getElementById("bResult");
+  if (r) { r.textContent=""; r.className="build-result"; }
+}
+
+function checkBuild() {
+  const t = topics[curTopic];
+  const s = t.sentences[buildIdx];
+  const built = builtWords.map(b=>b.w).join("");
+  const target = s.zh.replace(/[。？！，]/g,"");
+  const res = document.getElementById("bResult");
+  if (built === target) {
+    res.textContent = "正确！ " + s.zh;
+    res.className = "build-result ok";
+    setTimeout(()=>{ buildIdx++; renderBuild(); }, 1400);
+  } else {
+    res.textContent = "Not quite — try rearranging!";
+    res.className = "build-result bad";
+  }
+}
+
+function revealBuild() {
+  const s = topics[curTopic].sentences[buildIdx];
+  const res = document.getElementById("bResult");
+  res.textContent = "Answer: " + s.zh;
+  res.className = "build-result";
+  setTimeout(()=>{ buildIdx++; renderBuild(); }, 2000);
+}
+
+init();
+</script>
+</body>
+</html>
