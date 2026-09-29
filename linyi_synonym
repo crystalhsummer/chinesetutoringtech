@@ -1,1 +1,409 @@
 
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>相似詞解釋</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1EE; --paper:#FAFBF9; --ink:#1E2833; --muted:#5B6873; --rule:#C8D2CB;
+  --a:#0E6A66; --a-soft:#D6EAE6; --b:#7A3B6C; --b-soft:#EEDDEA; --ok:#2F7A3A; --no:#A63A2B;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141A1F; --paper:#1C242B; --ink:#E6ECEF; --muted:#9AA7B1; --rule:#33404A;
+    --a:#6FC7BF; --a-soft:#1E3533; --b:#D59AC7; --b-soft:#3A2536; --ok:#7CCB86; --no:#EE8B7C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141A1F; --paper:#1C242B; --ink:#E6ECEF; --muted:#9AA7B1; --rule:#33404A;
+  --a:#6FC7BF; --a-soft:#1E3533; --b:#D59AC7; --b-soft:#3A2536; --ok:#7CCB86; --no:#EE8B7C;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:16px}
+.wrap{max-width:980px;margin:0 auto;padding:28px 20px 64px}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(28px,5vw,40px);margin:0 0 4px;letter-spacing:.04em}
+.sub{color:var(--muted);margin:0 0 24px}
+
+.ask{display:grid;grid-template-columns:1fr auto 1fr auto;gap:12px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:14px}
+.ask input{width:100%;font:600 24px var(--serif);padding:10px 14px;border-radius:10px;border:2px solid var(--rule);background:var(--bg);color:var(--ink);text-align:center}
+#wa{border-color:var(--a)} #wb{border-color:var(--b)}
+.ask input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.vs{font-family:var(--serif);color:var(--muted);font-size:20px}
+button{font:inherit;cursor:pointer}
+.go{background:var(--ink);color:var(--paper);border:0;border-radius:10px;padding:14px 22px;font-weight:700;font-size:17px}
+.go:disabled{opacity:.5;cursor:wait}
+button:focus-visible{outline:3px solid var(--a);outline-offset:2px}
+@media (max-width:640px){.ask{grid-template-columns:1fr auto 1fr}.go{grid-column:1/-1}}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.chip{background:transparent;border:1px solid var(--rule);color:var(--ink);border-radius:999px;padding:5px 14px;font-size:15px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.custom{border-style:dashed}
+
+.status{margin:18px 0 0;color:var(--muted);min-height:1.5em}
+.status.err{color:var(--no)}
+
+/* result */
+.face{display:grid;grid-template-columns:1fr 1fr;margin-top:28px;border-radius:16px;overflow:hidden}
+.side{padding:22px 24px}
+.side.a{background:var(--a-soft)} .side.b{background:var(--b-soft)}
+.word{font-family:var(--serif);font-weight:900;font-size:clamp(44px,9vw,76px);line-height:1.1;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.a .word{color:var(--a)} .b .word{color:var(--b)}
+.py{font:500 17px var(--sans);color:var(--muted)}
+.gloss{font-weight:700;margin:6px 0 0}
+.shared{grid-column:1/-1;background:var(--paper);border-top:1px solid var(--rule);padding:14px 24px}
+.shared b{font-family:var(--serif)}
+.en{color:var(--muted);font-size:14.5px;display:block}
+.pyl{display:block;font-size:14.5px;color:var(--ink);opacity:.7;letter-spacing:.01em}
+body.nopy .pyl{display:none}
+.contrast .pyl{color:inherit}
+.tools{display:flex;justify-content:flex-end;margin-top:10px}
+.pytog{background:transparent;border:1px solid var(--rule);color:var(--ink);border-radius:8px;padding:4px 12px;font-size:14px}
+.pytog[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+h2{font-family:var(--serif);font-size:22px;margin:36px 0 12px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.face,.cols{grid-template-columns:1fr}}
+.col{background:var(--paper);border-radius:12px;padding:16px 18px;border-left:5px solid var(--a)}
+.col.b{border-left-color:var(--b)}
+.col h3{margin:0 0 8px;font-family:var(--serif);font-size:20px}
+.col.a h3{color:var(--a)} .col.b h3{color:var(--b)}
+.col ul{margin:0;padding-left:1.1em}
+.col li{margin:0 0 10px}
+
+.ex{list-style:none;padding:0;margin:0}
+.ex li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--rule)}
+.ex li:last-child{border-bottom:0}
+.ex .zh{font-size:18px}
+mark{background:none;font-weight:700;padding:0 1px}
+mark.ma{color:var(--a);box-shadow:inset 0 -.35em var(--a-soft)}
+mark.mb{color:var(--b);box-shadow:inset 0 -.35em var(--b-soft)}
+.say{flex:none;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:50%;width:34px;height:34px;display:grid;place-items:center;margin-top:2px}
+.say svg{width:16px;height:16px}
+
+.contrast{background:var(--ink);color:var(--paper);border-radius:14px;padding:20px 24px;font-size:20px;font-family:var(--serif);display:flex;gap:12px;align-items:flex-start}
+.contrast .en{color:inherit;opacity:.75;font-family:var(--sans)}
+.contrast .say{background:transparent;color:var(--paper);border-color:rgba(255,255,255,.35)}
+.contrast mark.ma,.contrast mark.mb{color:inherit;box-shadow:inset 0 -.12em currentColor}
+
+.swap{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.swap li{background:var(--paper);border-radius:10px;padding:12px 16px;display:grid;grid-template-columns:28px 1fr;gap:10px}
+.swap .zh{display:block}
+.mk{font-weight:700;font-size:18px;line-height:1.5}
+.mk.ok{color:var(--ok)} .mk.no{color:var(--no)}
+.swap .zh{font-size:17px}
+.swap .zh.no{text-decoration:line-through;text-decoration-color:var(--no)}
+
+.quiz{list-style:none;padding:0;margin:0;display:grid;gap:14px;counter-reset:q}
+.quiz>li{background:var(--paper);border-radius:12px;padding:16px 18px;counter-increment:q}
+.quiz .qs{font-size:19px;display:flex;gap:10px}
+.quiz .qs::before{content:counter(q) ".";color:var(--muted);font-size:16px;padding-top:3px}
+.blank{display:inline-block;min-width:3.2em;border-bottom:2px solid var(--muted);text-align:center;margin:0 3px;font-weight:700}
+.blank.done{border-bottom-color:transparent}
+.quiz .pyl{margin-left:1.6em}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0 1.6em}
+.opt{border:2px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:10px;padding:6px 16px;font-size:17px}
+.opt.oa{font-family:var(--serif);font-weight:700;color:var(--a);border-color:var(--a)}
+.opt.ob{font-family:var(--serif);font-weight:700;color:var(--b);border-color:var(--b)}
+.opt:disabled{cursor:default;opacity:.45}
+.opt.right{opacity:1;background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.wrong{opacity:1;background:var(--no);border-color:var(--no);color:#fff}
+.fb{margin:10px 0 0 1.6em;font-size:15px}
+.fb b.ok{color:var(--ok)} .fb b.no{color:var(--no)}
+.score{margin-top:16px;background:var(--ink);color:var(--paper);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:18px}
+.again{background:var(--paper);color:var(--ink);border:0;border-radius:8px;padding:8px 16px;font-weight:700}
+.ai-note{margin-top:28px;font-size:14px;color:var(--muted);border-top:1px solid var(--rule);padding-top:12px}
+.empty{margin-top:40px;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion:no-preference){.face{animation:in .35s ease-out}@keyframes in{from{opacity:0;transform:translateY(6px)}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>相似詞解釋</h1>
+  <p class="sub">輸入兩個詞，看看差別在哪裡。<span class="en">Type two similar words to see how they differ, with example sentences.</span></p>
+
+  <div class="ask" role="search">
+    <input id="wa" aria-label="第一個詞 first word" placeholder="清楚" maxlength="10" autocomplete="off">
+    <span class="vs" aria-hidden="true">／</span>
+    <input id="wb" aria-label="第二個詞 second word" placeholder="明確" maxlength="10" autocomplete="off">
+    <button class="go" id="go">比較</button>
+  </div>
+  <div class="chips" id="chips" aria-label="常見詞組 saved pairs"></div>
+  <div class="tools"><button class="pytog" id="pytog" aria-pressed="true">拼音 Pinyin</button></div>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <div id="out"><p class="empty">點上面的詞組，或輸入你自己的兩個詞。<span class="en">Tap a pair above, or type your own.</span></p></div>
+</div>
+
+<script>
+const P = [
+{a:"看書",b:"唸書",pa:"kàn shū",pb:"niàn shū",ga:"to read (a book)",gb:"to study; to be in school",
+ shared:{zh:"都跟「書」和學習有關。",en:"Both involve books, but only 唸書 means studying as a task or being enrolled in school."},
+ pa_pts:[{zh:"單純「讀」的動作，休閒、工作都可以。",en:"The plain act of reading, for fun or for work."},{zh:"讀的是什麼都可以：小說、雜誌、報告。",en:"Any reading material: novels, magazines, reports."}],
+ pb_pts:[{zh:"為了考試、課業而「讀」，有任務感。",en:"Studying for a test or class, with a goal attached."},{zh:"也可以指「上學、在某地求學」（台灣常用）。",en:"Also means attending school somewhere (common in Taiwan)."}],
+ exA:[{zh:"我週末喜歡在咖啡廳看書，放鬆一下。",en:"On weekends I like to read at a café and unwind."},{zh:"她每個月至少看兩本跟領導力有關的書。",en:"She reads at least two leadership books a month."}],
+ exB:[{zh:"她以前在西雅圖唸書，畢業後進了科技公司。",en:"She studied in Seattle, then joined a tech company after graduating."},{zh:"下週要考證照，這幾天我都在家唸書。",en:"My certification exam is next week, so I've been studying at home."}],
+ contrast:{zh:"我不是在唸書，只是在看小說而已。",en:"I'm not studying, I'm just reading a novel."},
+ swap:[{zh:"他在台大看書。",ok:false,en:"Wrong if you mean \"he's a student at NTU.\" Use 唸書."},{zh:"我在房間看書／唸書。",ok:true,en:"Both work. 唸書 suggests schoolwork; 看書 is any reading."}]},
+
+{a:"資訊",b:"消息",pa:"zīxùn",pb:"xiāoxi",ga:"information, data",gb:"news, word (about something happening)",
+ shared:{zh:"都是「得到的訊息」。",en:"Both refer to something you learn, but 資訊 is facts/data and 消息 is news about an event or person."},
+ pa_pts:[{zh:"客觀的資料、知識，偏正式、書面。",en:"Objective facts or data; more formal."},{zh:"常搭配：蒐集、提供、查詢資訊；資訊科技。",en:"Common with: collect, provide, look up; information technology."}],
+ pb_pts:[{zh:"某件事、某個人的最新狀況，口語常用。",en:"An update about an event or a person; everyday speech."},{zh:"常搭配：好消息、壞消息、有消息、聽到消息。",en:"Common with: good/bad news, to hear back, to hear word."}],
+ exA:[{zh:"做決定之前，先蒐集足夠的資訊。",en:"Gather enough information before you decide."},{zh:"教練會先看客戶填的背景資訊，再準備第一次的對談。",en:"The coach reviews the background information the client filled in before the first session."}],
+ exB:[{zh:"好消息：客戶說這次跟主管的對話很成功！",en:"Good news: my client said her conversation with her manager went really well!"},{zh:"上次教練課後，客戶兩個禮拜都沒有消息。",en:"It's been two weeks since our last session and I haven't heard from my client."}],
+ contrast:{zh:"課前表單給了我很多資訊，但客戶一見面就先分享了一個好消息。",en:"The intake form gave me a lot of information, but the first thing my client shared in person was good news."},
+ swap:[{zh:"我有一個好資訊。",ok:false,en:"Unnatural. Good news is 好消息."},{zh:"資訊科技",ok:true,en:"Fixed term for IT. Never 消息科技."}]},
+
+{a:"清楚",b:"明確",pa:"qīngchu",pb:"míngquè",ga:"clear, easy to understand",gb:"explicit, definite",
+ shared:{zh:"都有「不模糊」的意思。",en:"Both mean \"not vague.\" 清楚 is about being easy to see or understand; 明確 is about leaving no room for doubt."},
+ pa_pts:[{zh:"看得清楚、聽得清楚、說得清楚：容易理解。",en:"Easy to see, hear, or follow."},{zh:"也可以說「我不清楚」＝我不知道。",en:"「我不清楚」 means \"I'm not sure / I don't know.\""}],
+ pb_pts:[{zh:"目標、方向、立場、界線很確定，沒有模糊空間。",en:"Goals, direction, stance, or boundaries that are firm and specific."},{zh:"比較正式，常用在工作場合。",en:"More formal; common at work."}],
+ exA:[{zh:"你說得很清楚，我完全聽懂了。",en:"You explained it clearly; I understood completely."},{zh:"這件事我不太清楚，要問一下主管。",en:"I'm not sure about this; I need to check with my manager."}],
+ exB:[{zh:"教練幫她訂出明確的目標：三個月內，每週跟團隊成員做一次一對一。",en:"The coach helped her set a concrete goal: a weekly one-on-one with each team member for three months."},{zh:"她明確地拒絕了加班的要求。",en:"She clearly and firmly declined the overtime request."}],
+ contrast:{zh:"他的簡報講得很清楚，但下一步還不夠明確。",en:"His presentation was clear, but the next steps weren't specific enough."},
+ swap:[{zh:"這件事我不太明確。",ok:false,en:"Wrong. \"I'm not sure\" is 我不太清楚."},{zh:"主管的指示很清楚／很明確。",ok:true,en:"Both work. 清楚 = easy to follow; 明確 = specific, no ambiguity."}]},
+
+{a:"緊張",b:"焦慮",pa:"jǐnzhāng",pb:"jiāolǜ",ga:"nervous, tense",gb:"anxious, worried",
+ shared:{zh:"都是不安的情緒。",en:"Both describe unease. 緊張 is usually tied to a specific moment; 焦慮 is a longer, deeper worry about the future."},
+ pa_pts:[{zh:"面對某個場合的當下反應，通常短暫。",en:"A reaction to a specific event, usually short-lived."},{zh:"也可以形容情況：時間很緊張、關係很緊張。",en:"Also describes situations: a tight schedule, strained relations."}],
+ pb_pts:[{zh:"對不確定的未來一直擔心，持續比較久。",en:"Ongoing worry about an uncertain future."},{zh:"可以當名詞：職涯焦慮、焦慮感。",en:"Also a noun: career anxiety, a sense of anxiety."}],
+ exA:[{zh:"第一次跟副總報告，我緊張得手都在發抖。",en:"Presenting to the VP for the first time, my hands were shaking from nerves."},{zh:"專案時間很緊張，大家都在加班。",en:"The project timeline is tight and everyone is working late."}],
+ exB:[{zh:"很多客戶第一次來找教練時，心裡都帶著對未來的焦慮。",en:"Many clients come to their first coaching session carrying anxiety about the future."},{zh:"接下新角色的焦慮很常見，教練會幫你找到可以掌控的部分。",en:"Anxiety about taking on a new role is common; a coach helps you find what you can control."}],
+ contrast:{zh:"簡報前緊張很正常，但如果每天都睡不好，那可能是焦慮。",en:"Being nervous before a presentation is normal, but if you can't sleep every night, that may be anxiety."},
+ swap:[{zh:"時間很焦慮。",ok:false,en:"Wrong. A tight schedule is 時間很緊張."},{zh:"我對帶新團隊這件事有點緊張／焦慮。",ok:true,en:"Both work. 焦慮 sounds more serious and lasting."}]},
+
+{a:"理解",b:"了解",pa:"lǐjiě",pb:"liǎojiě",ga:"to comprehend; to empathize",gb:"to know about; to find out",
+ shared:{zh:"都可以翻成 understand。",en:"Both translate as \"understand.\" 了解 is knowing about something; 理解 is grasping the why, or accepting someone's feelings."},
+ pa_pts:[{zh:"懂背後的道理、原因、意思，比較深。",en:"Grasping the reasoning or meaning behind something."},{zh:"也有「體諒」的意思：我能理解你的感受。",en:"Also means to empathize: I understand how you feel."}],
+ pb_pts:[{zh:"知道、熟悉某個人、某件事的情況。",en:"To know about or be familiar with a person or situation."},{zh:"也可以當「去弄清楚」：了解一下。",en:"Also \"to find out\": 了解一下 = look into it."}],
+ exA:[{zh:"我能理解你為什麼對這次的回饋感到挫折。",en:"I can understand why this feedback felt frustrating to you."},{zh:"這篇文章很難，我讀了三次才理解。",en:"This article is hard; I read it three times before I understood it."}],
+ exB:[{zh:"我想先了解一下你目前的工作狀況。",en:"First I'd like to learn about your current work situation."},{zh:"我跟他共事五年，很了解他的做事風格。",en:"I've worked with him for five years; I know his style well."}],
+ contrast:{zh:"我了解公司的新規定，但我不理解為什麼要這樣規定。",en:"I know what the new policy is, but I don't understand why it was made."},
+ swap:[{zh:"我們先理解一下客戶的需求。",ok:false,en:"Unnatural. \"Let's find out\" is 了解一下."},{zh:"我能理解你的難處。",ok:true,en:"Empathy uses 理解, not 了解."}]},
+
+{a:"結構",b:"架構",pa:"jiégòu",pb:"jiàgòu",ga:"structure, composition",gb:"framework, architecture",
+ shared:{zh:"都跟「組成方式」有關。",en:"Both describe how something is organized. 結構 is how the parts fit together; 架構 is the overall frame someone designs."},
+ pa_pts:[{zh:"內部各部分怎麼組成、比例如何。",en:"How the internal parts are composed or proportioned."},{zh:"常搭配：句子結構、文章結構、人口結構。",en:"Common with: sentence, essay, population structure."}],
+ pb_pts:[{zh:"整體的框架、骨架，常是設計出來的。",en:"The overall skeleton or framework, usually designed."},{zh:"常搭配：系統架構、思考架構、組織架構圖。",en:"Common with: system architecture, thinking framework, org chart."}],
+ exA:[{zh:"這篇文章結構很清楚：先講問題，再講方法。",en:"This essay is well structured: problem first, then solution."},{zh:"我們團隊的年齡結構越來越年輕。",en:"Our team's age makeup is getting younger."}],
+ exB:[{zh:"教練常用 GROW 架構來引導對話。",en:"Coaches often use the GROW framework to guide a conversation."},{zh:"公司重組後，組織架構圖全部重畫了。",en:"After the reorg, the whole org chart was redrawn."}],
+ contrast:{zh:"用一個好的思考架構，你的回答結構自然就會清楚。",en:"With a good thinking framework, your answer's structure will naturally be clear."},
+ swap:[{zh:"這個句子的架構不對。",ok:false,en:"Grammar uses 結構: 句子結構."},{zh:"組織結構／組織架構",ok:true,en:"Both used. 架構 feels more like the org chart; 結構 more like the makeup."}]},
+
+{a:"記憶",b:"回憶",pa:"jìyì",pb:"huíyì",ga:"memory (ability or stored content)",gb:"recollection; to recall",
+ shared:{zh:"都跟過去記得的事有關。",en:"Both relate to the past. 記憶 is the ability or stored memory; 回憶 is looking back, often with feeling."},
+ pa_pts:[{zh:"大腦記住東西的能力，或記住的內容，比較中性。",en:"The ability to remember, or what is stored; neutral."},{zh:"常搭配：記憶力、在我的記憶中。",en:"Common with: memory (ability), in my memory."}],
+ pb_pts:[{zh:"主動想起過去的經驗，常帶感情。",en:"Actively thinking back on past experiences, often emotional."},{zh:"也可以當動詞：回憶一下、回憶起。",en:"Also a verb: think back, recall."}],
+ exA:[{zh:"我的記憶力越來越差，單字要多複習幾次。",en:"My memory is getting worse; I need to review vocabulary more often."},{zh:"在我的記憶中，那是第一次帶團隊。",en:"As far as I remember, that was the first time I led a team."}],
+ exB:[{zh:"第一次帶教練團體課，留下了很多美好的回憶。",en:"Leading my first group coaching program left many good memories."},{zh:"請你回憶一下，上次覺得工作很有成就感是什麼時候？",en:"Think back: when did you last feel real accomplishment at work?"}],
+ contrast:{zh:"我的記憶不太好，但那次升遷是我最難忘的回憶。",en:"My memory isn't great, but that promotion is my most unforgettable memory."},
+ swap:[{zh:"她的回憶力很好。",ok:false,en:"Wrong. Memory ability is 記憶力."},{zh:"美好的回憶／記憶",ok:true,en:"Both possible; 回憶 sounds warmer and more natural."}]},
+
+{a:"規則",b:"規律",pa:"guīzé",pb:"guīlǜ",ga:"rules (set by people)",gb:"pattern, regularity",
+ shared:{zh:"都跟「固定的方式」有關。",en:"Both involve a fixed way of doing things. 規則 is made by people; 規律 is a pattern you notice, or a regular routine."},
+ pa_pts:[{zh:"人定下來、大家要遵守的規定。",en:"Rules that people set and others follow."},{zh:"常搭配：遵守規則、遊戲規則、不成文的規則。",en:"Common with: follow the rules, rules of the game, unwritten rules."}],
+ pb_pts:[{zh:"事情自然出現的固定模式，要觀察才發現。",en:"A natural pattern you discover by observing."},{zh:"也可以當形容詞：生活很規律、規律運動。",en:"Also an adjective: a regular routine, exercise regularly."}],
+ exA:[{zh:"新團隊有很多不成文的規則，要慢慢觀察。",en:"The new team has many unwritten rules; take time to observe."},{zh:"升遷的遊戲規則，每家公司都不一樣。",en:"Every company plays the promotion game by different rules."}],
+ exB:[{zh:"她每天六點起床，生活很規律。",en:"She gets up at six every day and keeps a steady routine."},{zh:"記錄一個月的精神狀態，你會發現自己的工作規律。",en:"Track your energy for a month and you'll see your work patterns."}],
+ contrast:{zh:"規則可以改，規律只能發現。",en:"Rules can be changed; patterns can only be discovered."},
+ swap:[{zh:"我的生活很規則。",ok:false,en:"Wrong. A regular life is 生活很規律."},{zh:"請遵守公司的規則。",ok:true,en:"Company rules are 規則, never 規律."}]},
+
+{a:"沒空",b:"沒時間",pa:"méi kòng",pb:"méi shíjiān",ga:"not free, busy",gb:"no time (for something)",
+ shared:{zh:"都是「忙、不方便」。",en:"Both can mean \"busy.\" 沒空 is about your availability at a certain time; 沒時間 is about not having enough time for something."},
+ pa_pts:[{zh:"某個時間點沒辦法赴約、比較口語。",en:"Not available at a certain time; casual."},{zh:"常用在約時間、婉拒邀請：你有空嗎？",en:"Used for scheduling and declining: Are you free?"}],
+ pb_pts:[{zh:"時間不夠做某件事，強調「時間量」。",en:"Not enough time to do something; about amount of time."},{zh:"可以接動詞：沒時間吃飯、沒時間想。",en:"Takes a verb: no time to eat, no time to think."}],
+ exA:[{zh:"這週五我沒空，下週一可以嗎？",en:"I'm not free this Friday; does next Monday work?"},{zh:"主管最近都沒空，一對一會議一直延期。",en:"My manager has been busy, so our one-on-ones keep getting pushed."}],
+ exB:[{zh:"專案截止前，我忙到沒時間吃午餐。",en:"Before the deadline I was too busy to eat lunch."},{zh:"時間到了，我們沒時間了，下次再繼續。",en:"We're out of time; let's continue next session."}],
+ contrast:{zh:"很多時候不是真的沒時間，而是沒有把它放在優先順序上。",en:"Often it's not that we have no time, it's that we haven't made it a priority."},
+ swap:[{zh:"時間到了，我們沒空了。",ok:false,en:"Wrong. Running out of time is 沒時間了."},{zh:"我今天沒空／沒時間，改天吧。",ok:true,en:"Both work for declining."}]}
+];
+
+const QZ = {"看書|唸書": [{"q": "我哥哥在日本___，明年畢業。", "ans": "唸書", "en": "Being enrolled in school somewhere is 唸書.", "py": "wǒ gē ge zài rì běn ___, míng nián bì yè."}, {"q": "教練建議她睡前___，不要一直滑手機。", "ans": "看書", "en": "Reading before bed is 看書, not studying.", "py": "jiào liàn jiàn yì tā shuì qián ___, bú yào yì zhí huá shǒu jī."}, {"q": "明天有考試，今晚我得好好___。", "ans": "唸書", "en": "Studying for a test is 唸書.", "py": "míng tiān yǒu kǎo shì, jīn wǎn wǒ děi hǎo hǎo ___."}, {"q": "她在飛機上___，看完了一整本小說。", "ans": "看書", "en": "Reading a novel for fun is 看書.", "py": "tā zài fēi jī shàng ___, kàn wán le yì zhěng běn xiǎo shuō."}], "資訊|消息": [{"q": "你有小王的___嗎？他上次教練課後就沒聯絡了。", "ans": "消息", "en": "News about a person is 消息.", "py": "nǐ yǒu xiǎo wáng de ___ ma? tā shàng cì jiào liàn kè hòu jiù méi lián luò le."}, {"q": "公司內網有很多員工福利的___。", "ans": "資訊", "en": "Facts and details are 資訊.", "py": "gōng sī nèi wǎng yǒu hěn duō yuán gōng fú lì de ___."}, {"q": "聽到升遷的___，她開心得跳了起來。", "ans": "消息", "en": "Hearing news of an event is 聽到消息.", "py": "tīng dào shēng qiān de ___, tā kāi xīn de tiào le qǐ lái."}, {"q": "這份報告的___不夠完整，沒辦法做決定。", "ans": "資訊", "en": "Data used for a decision is 資訊.", "py": "zhè fèn bào gào de ___ bú gòu wán zhěng, méi bàn fǎ zuò jué dìng."}], "清楚|明確": [{"q": "不好意思，我沒聽___，可以再說一次嗎？", "ans": "清楚", "en": "Hearing clearly is 聽清楚.", "py": "bù hǎo yì si, wǒ méi tīng ___, kě yǐ zài shuō yí cì ma?"}, {"q": "我們需要一個___的截止日期，不能只說「盡快」。", "ans": "明確", "en": "A specific, fixed deadline is 明確.", "py": "wǒ men xū yào yí gè ___ de jié zhǐ rì qī, bù néng zhǐ shuō \"jìn kuài\"."}, {"q": "這個問題我不___，你可以問人資。", "ans": "清楚", "en": "\"I'm not sure\" is 我不清楚.", "py": "zhè gè wèn tí wǒ bù ___, nǐ kě yǐ wèn rén zī."}, {"q": "她很___地告訴主管：週末不回工作訊息。", "ans": "明確", "en": "Stating a firm boundary is 明確地.", "py": "tā hěn ___ de gào sù zhǔ guǎn: zhōu mò bù huí gōng zuò xùn xī."}], "緊張|焦慮": [{"q": "上台前我很___，一直喝水。", "ans": "緊張", "en": "Nerves right before a moment is 緊張.", "py": "shàng tái qián wǒ hěn ___, yì zhí hē shuǐ."}, {"q": "長期的工作___會影響睡眠和健康。", "ans": "焦慮", "en": "Long-term worry is 焦慮.", "py": "cháng qī de gōng zuò ___ huì yǐng xiǎng shuì mián hé jiàn kāng."}, {"q": "今年預算很___，新專案要等明年。", "ans": "緊張", "en": "A tight budget or schedule is 緊張.", "py": "jīn nián yù suàn hěn ___, xīn zhuān àn yào děng míng nián."}, {"q": "很多人擔心被 AI 取代，對未來感到___。", "ans": "焦慮", "en": "Worry about an uncertain future is 焦慮.", "py": "hěn duō rén dān xīn bèi AI qǔ dài, duì wèi lái gǎn dào ___."}], "理解|了解": [{"q": "教練課前，我先去___一下客戶的團隊狀況。", "ans": "了解", "en": "\"To find out\" is 了解一下.", "py": "jiào liàn kè qián, wǒ xiān qù ___ yí xià kè hù de tuán duì zhuàng kuàng."}, {"q": "謝謝你的___，我知道這個決定不容易。", "ans": "理解", "en": "Thanking someone for their understanding (empathy) uses 理解.", "py": "xiè xie nǐ de ___, wǒ zhī dào zhè gè jué dìng bù róng yì."}, {"q": "你___這家公司的文化嗎？", "ans": "了解", "en": "Being familiar with something is 了解.", "py": "nǐ ___ zhè jiā gōng sī de wén huà ma?"}, {"q": "這個概念很抽象，我花了很久才真正___。", "ans": "理解", "en": "Grasping a hard idea is 理解.", "py": "zhè gè gài niàn hěn chōu xiàng, wǒ huā le hěn jiǔ cái zhēn zhèng ___."}], "結構|架構": [{"q": "這個句子的___是「主詞＋動詞＋受詞」。", "ans": "結構", "en": "Grammar uses 結構.", "py": "zhè gè jù zi de ___ shì \"zhǔ cí+dòng cí+shòu cí\"."}, {"q": "工程師正在設計新的系統___。", "ans": "架構", "en": "System architecture is 系統架構.", "py": "gōng chéng shī zhèng zài shè jì xīn de xì tǒng ___."}, {"q": "教練用一個簡單的___，幫我整理職涯選擇。", "ans": "架構", "en": "A thinking framework is 架構.", "py": "jiào liàn yòng yí gè jiǎn dān de ___, bāng wǒ zhěng lǐ zhí yá xuǎn zé."}, {"q": "公司員工的年齡___很年輕，一半以上不到三十歲。", "ans": "結構", "en": "The makeup of a group is 結構.", "py": "gōng sī yuán gōng de nián líng ___ hěn nián qīng, yí bàn yǐ shàng bú dào sān shí suì."}], "記憶|回憶": [{"q": "年紀大了，___力沒有以前好。", "ans": "記憶", "en": "Memory as an ability is 記憶力.", "py": "nián jì dà le, ___ lì méi yǒu yǐ qián hǎo."}, {"q": "看到老照片，很多___都湧上心頭。", "ans": "回憶", "en": "Emotional memories of the past are 回憶.", "py": "kàn dào lǎo zhào piàn, hěn duō ___ dōu yǒng shàng xīn tóu."}, {"q": "請你___一下，第一次帶團隊是什麼感覺？", "ans": "回憶", "en": "\"Think back\" is 回憶一下.", "py": "qǐng nǐ ___ yí xià, dì yī cì dài tuán duì shì shén me gǎn jué?"}, {"q": "這個方法可以幫你加強單字的___。", "ans": "記憶", "en": "Retaining vocabulary is 記憶.", "py": "zhè gè fāng fǎ kě yǐ bāng nǐ jiā qiáng dān zì de ___."}], "規則|規律": [{"q": "開會不能遲到，這是我們團隊的___。", "ans": "規則", "en": "A rule people set is 規則.", "py": "kāi huì bù néng chí dào, zhè shì wǒ men tuán duì de ___."}, {"q": "她每週運動三次，生活很___。", "ans": "規律", "en": "A regular routine is 規律.", "py": "tā měi zhōu yùn dòng sān cì, shēng huó hěn ___."}, {"q": "研究發現，景氣好壞有一定的___。", "ans": "規律", "en": "A pattern you discover is 規律.", "py": "yán jiū fā xiàn, jǐng qì hǎo huài yǒu yí dìng de ___."}, {"q": "第一次教練課，我們先約定好談話的___，例如準時開始、內容保密。", "ans": "規則", "en": "Ground rules people agree on are 規則.", "py": "dì yī cì jiào liàn kè, wǒ men xiān yuē dìng hǎo tán huà de ___, lì rú zhǔn shí kāi shǐ, nèi róng bǎo mì."}], "沒空|沒時間": [{"q": "會議只剩五分鐘，我們___討論這一點了。", "ans": "沒時間", "en": "Running out of time is 沒時間. 沒空 can't take a verb like this.", "py": "huì yì zhǐ shèng wǔ fēn zhōng, wǒ men ___ tǎo lùn zhè yì diǎn le."}, {"q": "「你今天下午有空嗎？」「不好意思，我___。」", "ans": "both", "en": "Both work for saying you're not available.", "py": "\"nǐ jīn tiān xià wǔ yǒu kòng ma?\" \"bù hǎo yì si, wǒ ___.\""}, {"q": "專案太趕了，我忙到___睡覺。", "ans": "沒時間", "en": "\"No time to do X\" is 沒時間 + verb.", "py": "zhuān àn tài gǎn le, wǒ máng dào ___ shuì jiào."}, {"q": "主管這週都___，一對一會議改到下週。", "ans": "both", "en": "Both work. 沒空 focuses on being unavailable; 沒時間 on lacking time.", "py": "zhǔ guǎn zhè zhōu dōu ___, yí duì yī huì yì gǎi dào xià zhōu."}]};
+const PY = {"單純「讀」的動作，休閒、工作都可以。": "dān chún \"dú\" de dòng zuò, xiū xián, gōng zuò dōu kě yǐ.", "讀的是什麼都可以：小說、雜誌、報告。": "dú de shì shén me dōu kě yǐ: xiǎo shuō, zá zhì, bào gào.", "為了考試、課業而「讀」，有任務感。": "wèi le kǎo shì, kè yè ér \"dú\", yǒu rèn wù gǎn.", "也可以指「上學、在某地求學」（台灣常用）。": "yě kě yǐ zhǐ \"shàng xué, zài mǒu dì qiú xué\" (tái wān cháng yòng).", "我週末喜歡在咖啡廳看書，放鬆一下。": "wǒ zhōu mò xǐ huan zài kā fēi tīng kàn shū, fàng sōng yí xià.", "她每個月至少看兩本跟領導力有關的書。": "tā měi gè yuè zhì shǎo kàn liǎng běn gēn lǐng dǎo lì yǒu guān de shū.", "她以前在西雅圖唸書，畢業後進了科技公司。": "tā yǐ qián zài xī yǎ tú niàn shū, bì yè hòu jìn le kē jì gōng sī.", "下週要考證照，這幾天我都在家唸書。": "xià zhōu yào kǎo zhèng zhào, zhè jǐ tiān wǒ dōu zài jiā niàn shū.", "我不是在唸書，只是在看小說而已。": "wǒ bú shì zài niàn shū, zhǐ shì zài kàn xiǎo shuō ér yǐ.", "都跟「書」和學習有關。": "dōu gēn \"shū\" hé xué xí yǒu guān.", "他在台大看書。": "tā zài tái dà kàn shū.", "我在房間看書／唸書。": "wǒ zài fáng jiàn kàn shū/niàn shū.", "客觀的資料、知識，偏正式、書面。": "kè guān de zī liào, zhī shí, piān zhèng shì, shū miàn.", "常搭配：蒐集、提供、查詢資訊；資訊科技。": "cháng dā pèi: sōu jí, tí gōng, chá xún zī xùn; zī xùn kē jì.", "某件事、某個人的最新狀況，口語常用。": "mǒu jiàn shì, mǒu gè rén de zuì xīn zhuàng kuàng, kǒu yǔ cháng yòng.", "常搭配：好消息、壞消息、有消息、聽到消息。": "cháng dā pèi: hǎo xiāo xi, huài xiāo xi, yǒu xiāo xi, tīng dào xiāo xi.", "做決定之前，先蒐集足夠的資訊。": "zuò jué dìng zhī qián, xiān sōu jí zú gòu de zī xùn.", "教練會先看客戶填的背景資訊，再準備第一次的對談。": "jiào liàn huì xiān kàn kè hù tián de bèi jǐng zī xùn, zài zhǔn bèi dì yī cì de duì tán.", "好消息：客戶說這次跟主管的對話很成功！": "hǎo xiāo xi: kè hù shuō zhè cì gēn zhǔ guǎn de duì huà hěn chéng gōng!", "上次教練課後，客戶兩個禮拜都沒有消息。": "shàng cì jiào liàn kè hòu, kè hù liǎng gè lǐ bài dōu méi yǒu xiāo xi.", "課前表單給了我很多資訊，但客戶一見面就先分享了一個好消息。": "kè qián biǎo dān gěi le wǒ hěn duō zī xùn, dàn kè hù yí jiàn miàn jiù xiān fēn xiǎng le yí gè hǎo xiāo xi.", "都是「得到的訊息」。": "dōu shì \"dé dào de xùn xī\".", "我有一個好資訊。": "wǒ yǒu yí gè hǎo zī xùn.", "資訊科技": "zī xùn kē jì", "看得清楚、聽得清楚、說得清楚：容易理解。": "kàn de qīng chu, tīng de qīng chu, shuō de qīng chu: róng yì lǐ jiě.", "也可以說「我不清楚」＝我不知道。": "yě kě yǐ shuō \"wǒ bù qīng chu\" = wǒ bù zhī dào.", "目標、方向、立場、界線很確定，沒有模糊空間。": "mù biāo, fāng xiàng, lì chǎng, jiè xiàn hěn què dìng, méi yǒu mó hu kōng jiān.", "比較正式，常用在工作場合。": "bǐ jiào zhèng shì, cháng yòng zài gōng zuò chǎng hé.", "你說得很清楚，我完全聽懂了。": "nǐ shuō de hěn qīng chu, wǒ wán quán tīng dǒng le.", "這件事我不太清楚，要問一下主管。": "zhè jiàn shì wǒ bú tài qīng chu, yào wèn yí xià zhǔ guǎn.", "教練幫她訂出明確的目標：三個月內，每週跟團隊成員做一次一對一。": "jiào liàn bāng tā dìng chū míng què de mù biāo: sān gè yuè nèi, měi zhōu gēn tuán duì chéng yuán zuò yí cì yí duì yī.", "她明確地拒絕了加班的要求。": "tā míng què de jù jué le jiā bān de yāo qiú.", "他的簡報講得很清楚，但下一步還不夠明確。": "tā de jiǎn bào jiǎng de hěn qīng chu, dàn xià yí bù hái bú gòu míng què.", "都有「不模糊」的意思。": "dōu yǒu \"bù mó hu\" de yì si.", "這件事我不太明確。": "zhè jiàn shì wǒ bú tài míng què.", "主管的指示很清楚／很明確。": "zhǔ guǎn de zhǐ shì hěn qīng chu/hěn míng què.", "面對某個場合的當下反應，通常短暫。": "miàn duì mǒu gè chǎng hé de dāng xià fǎn yìng, tōng cháng duǎn zàn.", "也可以形容情況：時間很緊張、關係很緊張。": "yě kě yǐ xíng róng qíng kuàng: shí jiān hěn jǐn zhāng, guān xì hěn jǐn zhāng.", "對不確定的未來一直擔心，持續比較久。": "duì bú què dìng de wèi lái yì zhí dān xīn, chí xù bǐ jiào jiǔ.", "可以當名詞：職涯焦慮、焦慮感。": "kě yǐ dāng míng cí: zhí yá jiāo lǜ, jiāo lǜ gǎn.", "第一次跟副總報告，我緊張得手都在發抖。": "dì yī cì gēn fù zǒng bào gào, wǒ jǐn zhāng de shǒu dōu zài fā dǒu.", "專案時間很緊張，大家都在加班。": "zhuān àn shí jiān hěn jǐn zhāng, dà jiā dōu zài jiā bān.", "很多客戶第一次來找教練時，心裡都帶著對未來的焦慮。": "hěn duō kè hù dì yī cì lái zhǎo jiào liàn shí, xīn lǐ dōu dài zhe duì wèi lái de jiāo lǜ.", "接下新角色的焦慮很常見，教練會幫你找到可以掌控的部分。": "jiē xià xīn jué sè de jiāo lǜ hěn cháng jiàn, jiào liàn huì bāng nǐ zhǎo dào kě yǐ zhǎng kòng de bù fen.", "簡報前緊張很正常，但如果每天都睡不好，那可能是焦慮。": "jiǎn bào qián jǐn zhāng hěn zhèng cháng, dàn rú guǒ měi tiān dōu shuì bù hǎo, nà kě néng shì jiāo lǜ.", "都是不安的情緒。": "dōu shì bù ān de qíng xù.", "時間很焦慮。": "shí jiān hěn jiāo lǜ.", "我對帶新團隊這件事有點緊張／焦慮。": "wǒ duì dài xīn tuán duì zhè jiàn shì yǒu diǎn jǐn zhāng/jiāo lǜ.", "懂背後的道理、原因、意思，比較深。": "dǒng bèi hòu de dào lǐ, yuán yīn, yì si, bǐ jiào shēn.", "也有「體諒」的意思：我能理解你的感受。": "yě yǒu \"tǐ liàng\" de yì si: wǒ néng lǐ jiě nǐ de gǎn shòu.", "知道、熟悉某個人、某件事的情況。": "zhī dào, shú xī mǒu gè rén, mǒu jiàn shì de qíng kuàng.", "也可以當「去弄清楚」：了解一下。": "yě kě yǐ dāng \"qù nòng qīng chu\": liǎo jiě yí xià.", "我能理解你為什麼對這次的回饋感到挫折。": "wǒ néng lǐ jiě nǐ wèi shén me duì zhè cì de huí kuì gǎn dào cuò zhé.", "這篇文章很難，我讀了三次才理解。": "zhè piān wén zhāng hěn nán, wǒ dú le sān cì cái lǐ jiě.", "我想先了解一下你目前的工作狀況。": "wǒ xiǎng xiān liǎo jiě yí xià nǐ mù qián de gōng zuò zhuàng kuàng.", "我跟他共事五年，很了解他的做事風格。": "wǒ gēn tā gòng shì wǔ nián, hěn liǎo jiě tā de zuò shì fēng gé.", "我了解公司的新規定，但我不理解為什麼要這樣規定。": "wǒ liǎo jiě gōng sī de xīn guī dìng, dàn wǒ bù lǐ jiě wèi shén me yào zhè yàng guī dìng.", "都可以翻成 understand。": "dōu kě yǐ fān chéng understand.", "我們先理解一下客戶的需求。": "wǒ men xiān lǐ jiě yí xià kè hù de xū qiú.", "我能理解你的難處。": "wǒ néng lǐ jiě nǐ de nán chù.", "內部各部分怎麼組成、比例如何。": "nèi bù gè bù fen zěn me zǔ chéng, bǐ lì rú hé.", "常搭配：句子結構、文章結構、人口結構。": "cháng dā pèi: jù zi jié gòu, wén zhāng jié gòu, rén kǒu jié gòu.", "整體的框架、骨架，常是設計出來的。": "zhěng tǐ de kuàng jià, gǔ jià, cháng shì shè jì chū lái de.", "常搭配：系統架構、思考架構、組織架構圖。": "cháng dā pèi: xì tǒng jià gòu, sī kǎo jià gòu, zǔ zhī jià gòu tú.", "這篇文章結構很清楚：先講問題，再講方法。": "zhè piān wén zhāng jié gòu hěn qīng chu: xiān jiǎng wèn tí, zài jiǎng fāng fǎ.", "我們團隊的年齡結構越來越年輕。": "wǒ men tuán duì de nián líng jié gòu yuè lái yuè nián qīng.", "教練常用 GROW 架構來引導對話。": "jiào liàn cháng yòng GROW jià gòu lái yǐn dǎo duì huà.", "公司重組後，組織架構圖全部重畫了。": "gōng sī chóng zǔ hòu, zǔ zhī jià gòu tú quán bù chóng huà le.", "用一個好的思考架構，你的回答結構自然就會清楚。": "yòng yí gè hǎo de sī kǎo jià gòu, nǐ de huí dá jié gòu zì rán jiù huì qīng chu.", "都跟「組成方式」有關。": "dōu gēn \"zǔ chéng fāng shì\" yǒu guān.", "這個句子的架構不對。": "zhè gè jù zi de jià gòu bú duì.", "組織結構／組織架構": "zǔ zhī jié gòu/zǔ zhī jià gòu", "大腦記住東西的能力，或記住的內容，比較中性。": "dà nǎo jì zhù dōng xi de néng lì, huò jì zhù de nèi róng, bǐ jiào zhōng xìng.", "常搭配：記憶力、在我的記憶中。": "cháng dā pèi: jì yì lì, zài wǒ de jì yì zhōng.", "主動想起過去的經驗，常帶感情。": "zhǔ dòng xiǎng qǐ guò qù de jīng yàn, cháng dài gǎn qíng.", "也可以當動詞：回憶一下、回憶起。": "yě kě yǐ dāng dòng cí: huí yì yí xià, huí yì qǐ.", "我的記憶力越來越差，單字要多複習幾次。": "wǒ de jì yì lì yuè lái yuè chà, dān zì yào duō fù xí jǐ cì.", "在我的記憶中，那是第一次帶團隊。": "zài wǒ de jì yì zhōng, nà shì dì yī cì dài tuán duì.", "第一次帶教練團體課，留下了很多美好的回憶。": "dì yī cì dài jiào liàn tuán tǐ kè, liú xià le hěn duō měi hǎo de huí yì.", "請你回憶一下，上次覺得工作很有成就感是什麼時候？": "qǐng nǐ huí yì yí xià, shàng cì jué de gōng zuò hěn yǒu chéng jiù gǎn shì shén me shí hou?", "我的記憶不太好，但那次升遷是我最難忘的回憶。": "wǒ de jì yì bú tài hǎo, dàn nà cì shēng qiān shì wǒ zuì nán wàng de huí yì.", "都跟過去記得的事有關。": "dōu gēn guò qù jì de de shì yǒu guān.", "她的回憶力很好。": "tā de huí yì lì hěn hǎo.", "美好的回憶／記憶": "měi hǎo de huí yì/jì yì", "人定下來、大家要遵守的規定。": "rén dìng xià lái, dà jiā yào zūn shǒu de guī dìng.", "常搭配：遵守規則、遊戲規則、不成文的規則。": "cháng dā pèi: zūn shǒu guī zé, yóu xì guī zé, bù chéng wén de guī zé.", "事情自然出現的固定模式，要觀察才發現。": "shì qing zì rán chū xiàn de gù dìng mó shì, yào guān chá cái fā xiàn.", "也可以當形容詞：生活很規律、規律運動。": "yě kě yǐ dāng xíng róng cí: shēng huó hěn guī lǜ, guī lǜ yùn dòng.", "新團隊有很多不成文的規則，要慢慢觀察。": "xīn tuán duì yǒu hěn duō bù chéng wén de guī zé, yào màn màn guān chá.", "升遷的遊戲規則，每家公司都不一樣。": "shēng qiān de yóu xì guī zé, měi jiā gōng sī dōu bù yí yàng.", "她每天六點起床，生活很規律。": "tā měi tiān liù diǎn qǐ chuáng, shēng huó hěn guī lǜ.", "記錄一個月的精神狀態，你會發現自己的工作規律。": "jì lù yí gè yuè de jīng shén zhuàng tài, nǐ huì fā xiàn zì jǐ de gōng zuò guī lǜ.", "規則可以改，規律只能發現。": "guī zé kě yǐ gǎi, guī lǜ zhǐ néng fā xiàn.", "都跟「固定的方式」有關。": "dōu gēn \"gù dìng de fāng shì\" yǒu guān.", "我的生活很規則。": "wǒ de shēng huó hěn guī zé.", "請遵守公司的規則。": "qǐng zūn shǒu gōng sī de guī zé.", "某個時間點沒辦法赴約、比較口語。": "mǒu gè shí jiān diǎn méi bàn fǎ fù yuē, bǐ jiào kǒu yǔ.", "常用在約時間、婉拒邀請：你有空嗎？": "cháng yòng zài yuē shí jiān, wǎn jù yāo qǐng: nǐ yǒu kòng ma?", "時間不夠做某件事，強調「時間量」。": "shí jiān bú gòu zuò mǒu jiàn shì, qiáng diào \"shí jiān liàng\".", "可以接動詞：沒時間吃飯、沒時間想。": "kě yǐ jiē dòng cí: méi shí jiān chī fàn, méi shí jiān xiǎng.", "這週五我沒空，下週一可以嗎？": "zhè zhōu wǔ wǒ méi kòng, xià zhōu yī kě yǐ ma?", "主管最近都沒空，一對一會議一直延期。": "zhǔ guǎn zuì jìn dōu méi kòng, yí duì yī huì yì yì zhí yán qī.", "專案截止前，我忙到沒時間吃午餐。": "zhuān àn jié zhǐ qián, wǒ máng dào méi shí jiān chī wǔ cān.", "時間到了，我們沒時間了，下次再繼續。": "shí jiān dào le, wǒ men méi shí jiān le, xià cì zài jì xù.", "很多時候不是真的沒時間，而是沒有把它放在優先順序上。": "hěn duō shí hou bú shì zhēn de méi shí jiān, ér shì méi yǒu bǎ tā fàng zài yōu xiān shùn xù shàng.", "都是「忙、不方便」。": "dōu shì \"máng, bù fāng biàn\".", "時間到了，我們沒空了。": "shí jiān dào le, wǒ men méi kòng le.", "我今天沒空／沒時間，改天吧。": "wǒ jīn tiān méi kòng/méi shí jiān, gǎi tiān ba."};
+const $ = s => document.querySelector(s);
+const key = (a,b) => [a,b].sort().join("|");
+let custom = {};
+try { custom = JSON.parse(localStorage.getItem("synpairs") || "{}") || {}; } catch(e) { custom = {}; }
+function saveCustom(){ try { localStorage.setItem("synpairs", JSON.stringify(custom)); } catch(e){} }
+
+function findPair(a,b){
+  const k = key(a,b);
+  let p = P.find(x => key(x.a,x.b) === k) || custom[k];
+  if(!p) return null;
+  if(p.a !== a) p = flip(p);
+  return p;
+}
+function flip(p){
+  return {...p,a:p.b,b:p.a,pa:p.pb,pb:p.pa,ga:p.gb,gb:p.ga,pa_pts:p.pb_pts,pb_pts:p.pa_pts,exA:p.exB,exB:p.exA};
+}
+
+function esc(s){ return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function hl(s, a, b){
+  let h = esc(s);
+  const words = [[a,"a"],[b,"b"]].filter(w => w[0]).sort((x,y)=>y[0].length-x[0].length);
+  words.forEach(([w,c]) => { h = h.split(esc(w)).join(`<mark class="m${c}">${esc(w)}</mark>`); });
+  return h;
+}
+const SPK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+function say(t){
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t); u.lang = "zh-TW"; u.rate = .85;
+    const v = speechSynthesis.getVoices().find(v => /zh[-_]TW/i.test(v.lang)) || speechSynthesis.getVoices().find(v => /^zh/i.test(v.lang));
+    if(v) u.voice = v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+const hasTTS = "speechSynthesis" in window;
+function sayBtn(t){ return hasTTS ? `<button class="say" data-say="${esc(t)}" aria-label="朗讀 read aloud">${SPK}</button>` : ""; }
+
+const pyOf = x => esc(x && (x.py || PY[x.zh]) || "");
+const pyl = x => { const t = pyOf(x); return t ? `<span class="pyl">${t}</span>` : ""; };
+function render(p, ai){
+  const pts = arr => (arr||[]).map(x => `<li>${esc(x.zh)}${pyl(x)}<span class="en">${esc(x.en)}</span></li>`).join("");
+  const exs = (arr) => (arr||[]).map(x => `<li>${sayBtn(x.zh)}<div><span class="zh">${hl(x.zh,p.a,p.b)}</span>${pyl(x)}<span class="en">${esc(x.en)}</span></div></li>`).join("");
+  const sw = (p.swap||[]).map(x => `<li><span class="mk ${x.ok?"ok":"no"}" aria-label="${x.ok?"正確":"錯誤"}">${x.ok?"✓":"✗"}</span><div><span class="zh ${x.ok?"":"no"}">${esc(x.zh)}</span>${pyl(x)}<span class="en">${esc(x.en)}</span></div></li>`).join("");
+  $("#out").innerHTML = `
+  <section class="face" aria-label="兩個詞">
+    <div class="side a"><div class="word">${esc(p.a)}<span class="py">${esc(p.pa)}</span></div><p class="gloss">${esc(p.ga)}</p></div>
+    <div class="side b"><div class="word">${esc(p.b)}<span class="py">${esc(p.pb)}</span></div><p class="gloss">${esc(p.gb)}</p></div>
+    <div class="shared"><b>共同點</b>　${esc(p.shared?.zh)}${pyl(p.shared)}<span class="en">${esc(p.shared?.en)}</span></div>
+  </section>
+
+  <h2>用法重點 <span class="en" style="display:inline">How each is used</span></h2>
+  <div class="cols">
+    <div class="col a"><h3>${esc(p.a)}</h3><ul>${pts(p.pa_pts)}</ul></div>
+    <div class="col b"><h3>${esc(p.b)}</h3><ul>${pts(p.pb_pts)}</ul></div>
+  </div>
+
+  <h2>例句 <span class="en" style="display:inline">Example sentences</span></h2>
+  <div class="cols">
+    <div class="col a"><h3>${esc(p.a)}</h3><ul class="ex">${exs(p.exA)}</ul></div>
+    <div class="col b"><h3>${esc(p.b)}</h3><ul class="ex">${exs(p.exB)}</ul></div>
+  </div>
+
+  <h2>放在一起比較 <span class="en" style="display:inline">One sentence, both words</span></h2>
+  <div class="contrast">${sayBtn(p.contrast?.zh)}<div>${hl(p.contrast?.zh,p.a,p.b)}${pyl(p.contrast)}<span class="en">${esc(p.contrast?.en)}</span></div></div>
+
+  <h2>可以互換嗎？ <span class="en" style="display:inline">Can you swap them?</span></h2>
+  <ul class="swap">${sw}</ul>
+
+  <h2>練習一下 <span class="en" style="display:inline">Practice: pick the word that fits</span></h2>
+  <div id="quizbox"></div>
+  ${ai ? `<p class="ai-note">這組解釋由 AI 產生，建議跟老師確認。<span class="en">This explanation was generated by AI. Check it with your teacher.</span></p>` : ""}`;
+  renderQuiz(p);
+}
+
+
+function getQuiz(p){ return p.quiz || QZ[p.a+"|"+p.b] || QZ[p.b+"|"+p.a] || []; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function renderQuiz(p, reshuffle){
+  const box = $("#quizbox"); if(!box) return;
+  const items = reshuffle ? shuffle(getQuiz(p)) : getQuiz(p);
+  if(!items.length){ box.innerHTML = '<p class="en">這組詞還沒有練習題。 No practice items for this pair yet.</p>'; return; }
+  let done = 0, right = 0;
+  box.innerHTML = `<ol class="quiz">${items.map((x,i)=>{
+    const [pre,post] = x.q.split("___");
+    return `<li data-i="${i}"><div class="qs"><span>${esc(pre)}<span class="blank">&nbsp;</span>${esc(post||"")}</span></div>${x.py?`<span class="pyl">${esc(x.py)}</span>`:""}
+      <div class="opts"><button class="opt oa" data-v="${esc(p.a)}">${esc(p.a)}</button><button class="opt ob" data-v="${esc(p.b)}">${esc(p.b)}</button><button class="opt" data-v="both">兩個都可以 Both</button></div>
+      <p class="fb" hidden></p></li>`;}).join("")}</ol><div class="score" hidden></div>`;
+  box.querySelectorAll(".quiz>li").forEach(li => {
+    const x = items[+li.dataset.i];
+    li.querySelector(".opts").addEventListener("click", e => {
+      const btn = e.target.closest(".opt"); if(!btn || btn.disabled) return;
+      const ok = btn.dataset.v === x.ans;
+      li.querySelectorAll(".opt").forEach(o => { o.disabled = true; if(o.dataset.v === x.ans) o.classList.add("right"); });
+      if(!ok) btn.classList.add("wrong");
+      const word = x.ans === "both" ? p.a + "／" + p.b : x.ans;
+      const wpy = x.ans === "both" ? p.pa + " / " + p.pb : (x.ans === p.a ? p.pa : p.pb);
+      const bl = li.querySelector(".blank"); bl.textContent = word; bl.classList.add("done");
+      bl.innerHTML = `<mark class="${x.ans===p.b?"mb":"ma"}">${esc(word)}</mark>`;
+      const pl = li.querySelector(".pyl"); if(pl && wpy) pl.textContent = x.py.replace("___", wpy);
+      const fb = li.querySelector(".fb"); fb.hidden = false;
+      fb.innerHTML = `<b class="${ok?"ok":"no"}">${ok?"答對了！ Correct.":"再想想。 Not quite."}</b> ${esc(x.en)} ${hasTTS?`<button class="say" style="display:inline-grid;vertical-align:middle;margin-left:6px" data-say="${esc(x.q.replace("___", x.ans==="both"?p.a:x.ans))}" aria-label="朗讀 read aloud">${SPK}</button>`:""}`;
+      done++; if(ok) right++;
+      if(done === items.length){
+        const sc = box.querySelector(".score"); sc.hidden = false;
+        sc.innerHTML = `<span>${right} / ${items.length} 答對 correct${right===items.length?"，太棒了！":""}</span><button class="again">再練一次 Try again</button>`;
+        sc.querySelector(".again").onclick = () => { renderQuiz(p, true); box.scrollIntoView({block:"start"}); };
+      }
+    });
+  });
+}
+
+function setStatus(t, err){ const s=$("#status"); s.textContent=t; s.className = "status" + (err?" err":""); }
+
+function drawChips(cur){
+  const all = P.map(p=>[p.a,p.b,false]).concat(Object.values(custom).map(p=>[p.a,p.b,true]));
+  $("#chips").innerHTML = all.map(([a,b,c]) =>
+    `<button class="chip${c?" custom":""}" data-a="${esc(a)}" data-b="${esc(b)}" aria-pressed="${cur===key(a,b)}">${esc(a)}／${esc(b)}</button>`).join("");
+}
+
+let samplePromise = (window.claude && claude.use) ? claude.use("sample").catch(()=>null) : Promise.resolve(null);
+let busy = false;
+
+async function compare(a,b){
+  a = a.trim(); b = b.trim();
+  if(!a || !b){ setStatus("請輸入兩個詞。 Enter two words.", true); return; }
+  if(a === b){ setStatus("這兩個詞一樣，請換一個。 The two words are the same.", true); return; }
+  $("#wa").value = a; $("#wb").value = b;
+  const p = findPair(a,b);
+  if(p){ setStatus(""); render(p, !!custom[key(a,b)]); drawChips(key(a,b)); return; }
+  if(busy) return;
+  const sample = await samplePromise;
+  if(!sample){ setStatus(`「${a}／${b}」還沒有內建解釋。請從上面的詞組選一個。 This pair isn't built in yet.`, true); return; }
+  busy = true; $("#go").disabled = true;
+  setStatus("正在比較這兩個詞…（大約 10 到 40 秒） Comparing…");
+  const prompt = `You are an expert teacher of Mandarin as used in Taiwan, writing for an adult English-speaking learner who is a career coach in the tech industry. Compare the two words 「${a}」 and 「${b}」.
+Use Traditional Chinese characters and Taiwan usage. Keep each Chinese line short (under 30 characters). Set example and practice sentences in career-coaching contexts wherever natural (coaching sessions, coach and client conversations, goals, feedback, leading a team, one-on-ones). Avoid topics about quitting a job, changing jobs, job hunting, interviews, offers, or layoffs. English lines are plain, short translations or explanations. Do not use em dashes.
+If either input is not a real word, still do your best and explain in "shared".
+Every object that has a "zh" field must also have a "py" field: Hanyu Pinyin with tone marks for that zh line, one space between syllables, tone sandhi marked for 一 and 不, neutral tones where standard (e.g. shén me, wǒ men, qīng chu), and ASCII punctuation.
+Return ONLY a JSON object, no markdown, with exactly these keys:
+{"a":"${a}","b":"${b}","pa":"pinyin with tone marks for a","pb":"pinyin for b","ga":"short English gloss of a","gb":"short English gloss of b",
+"shared":{"zh":"one short line on what they share","py":"pinyin","en":"one sentence stating the core difference"},
+"pa_pts":[{"zh":"usage point for a","en":"English"},{"zh":"","en":""}],
+"pb_pts":[{"zh":"usage point for b","en":"English"},{"zh":"","en":""}],
+"exA":[{"zh":"example sentence containing ${a}","en":"translation"},{"zh":"","en":""}],
+"exB":[{"zh":"example sentence containing ${b}","en":"translation"},{"zh":"","en":""}],
+"contrast":{"zh":"one sentence that uses both words to show the difference","en":"translation"},
+"swap":[{"zh":"a sentence where swapping in the other word is wrong (write the wrong version)","ok":false,"en":"why it's wrong and the correct word"},{"zh":"a sentence where both work, written as 詞A／詞B inline","ok":true,"en":"nuance"}],
+"quiz":[4 fill-in-the-blank items, each {"q":"a new sentence (not reused from above) with ___ where the word goes","py":"pinyin of q, keeping ___ in place","ans":"exactly ${a} or exactly ${b}, or \"both\" only if both are fully natural","en":"one short English reason"}; at least one answer ${a} and one ${b}]}`;
+  try{
+    const r = await sample.json(prompt, {modelTier:"default"});
+    if(!r || !r.a || !r.exA) throw {code:"bad"};
+    r.a = a; r.b = b;
+    custom[key(a,b)] = r; saveCustom();
+    setStatus(""); render(r, true); drawChips(key(a,b));
+  }catch(e){
+    const m = {not_granted:"需要允許才能產生新的解釋。 Allow access to generate new pairs.",
+               rate_limited:"請求太多，請稍等一分鐘再試。 Too many requests; wait a minute and try again.",
+               cancelled:"已取消。 Cancelled."};
+    setStatus(m[e && e.code] || "沒辦法產生這組解釋，請再試一次。 Couldn't generate this pair; try again.", true);
+  }finally{ busy = false; $("#go").disabled = false; }
+}
+
+$("#go").addEventListener("click", () => compare($("#wa").value, $("#wb").value));
+["#wa","#wb"].forEach(s => $(s).addEventListener("keydown", e => { if(e.key==="Enter") compare($("#wa").value, $("#wb").value); }));
+$("#chips").addEventListener("click", e => { const c = e.target.closest(".chip"); if(c) compare(c.dataset.a, c.dataset.b); });
+$("#out").addEventListener("click", e => { const b = e.target.closest("[data-say]"); if(b) say(b.dataset.say); });
+if(hasTTS){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
+drawChips("");
+let showPy = true;
+try { showPy = localStorage.getItem("synpy") !== "0"; } catch(e){}
+function applyPy(){ document.body.classList.toggle("nopy", !showPy); $("#pytog").setAttribute("aria-pressed", String(showPy)); }
+$("#pytog").addEventListener("click", () => { showPy = !showPy; try{ localStorage.setItem("synpy", showPy ? "1" : "0"); }catch(e){} applyPy(); });
+applyPy();
+</script>
+</body>
+</html>
